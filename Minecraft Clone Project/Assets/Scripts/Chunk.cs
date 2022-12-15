@@ -12,10 +12,14 @@ public class Chunk : MonoBehaviour
     List<int> triangles = new List<int>();  
     List<Vector2> uvs = new List<Vector2>();
 
-    bool[,,] voxelMap = new bool[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
+    byte[,,] voxelMap = new byte[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
+
+    World world;
 
     void Start()
     {
+        world = GameObject.Find("World").GetComponent<World>();        
+
         PopulateVoxelMap();
         CreateMeshData();
         CreateMesh();
@@ -41,7 +45,7 @@ public class Chunk : MonoBehaviour
             {
                return false;
             }        
-        return voxelMap[x, y, z];
+        return world.blocktypes[voxelMap[x, y, z]].isSolid;
     }
 
     void PopulateVoxelMap(){
@@ -50,8 +54,13 @@ public class Chunk : MonoBehaviour
             for(int x=  0; x < VoxelData.ChunkWidth; x++){
                 for(int z = 0; z< VoxelData.ChunkWidth; z++){
                     
-
-                    voxelMap[x, y, z] = true;
+                    if(y < 1)
+                        voxelMap[x, y, z] = 0;
+                    else if (y == VoxelData.ChunkHeight - 1)
+                        voxelMap[x, y, z] = 2;
+                    else
+                        voxelMap[x, y, z] = 1;
+                    
                     
                 }
             }
@@ -62,14 +71,15 @@ public class Chunk : MonoBehaviour
         for(int p = 0; p < 6; p++){
 
             if(!CheckVoxel(pos + VoxelData.faceChecks[p])){
+                byte blockID = voxelMap[(int)pos.x, (int)pos.y, (int)pos.z];
+
                 vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris [p, 0]]);
                 vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris [p, 1]]);
                 vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris [p, 2]]);
                 vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris [p, 3]]);
-                uvs.Add(VoxelData.voxelUvs [0]);
-                uvs.Add(VoxelData.voxelUvs [1]);
-                uvs.Add(VoxelData.voxelUvs [2]);
-                uvs.Add(VoxelData.voxelUvs [3]);
+
+                AddTexture(world.blocktypes[blockID].GetTextureID(p));
+
                 triangles.Add(vertexIndex);
                 triangles.Add(vertexIndex + 1);
                 triangles.Add(vertexIndex + 2);
@@ -94,4 +104,22 @@ public class Chunk : MonoBehaviour
         meshFilter.mesh = mesh;      
        
     }
+
+    void AddTexture (int textureID) {
+        
+        float y = textureID/VoxelData.TextureAtlasSizeInBlocks;
+        float x = textureID - (y*VoxelData.TextureAtlasSizeInBlocks);
+
+        x *= VoxelData.NormalizedBlockTextureSize;
+        y *= VoxelData.NormalizedBlockTextureSize;
+
+        y = 1f - y - VoxelData.NormalizedBlockTextureSize;
+
+        uvs.Add(new Vector2(x, y));
+        uvs.Add(new Vector2(x, y + VoxelData.NormalizedBlockTextureSize));
+        uvs.Add(new Vector2(x + VoxelData.NormalizedBlockTextureSize, y));
+        uvs.Add(new Vector2(x + VoxelData.NormalizedBlockTextureSize, y + VoxelData.NormalizedBlockTextureSize));
+
+    }
+
 }   
