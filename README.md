@@ -1,2 +1,2 @@
 # Minecraft_clone
-Minecraft clone made with C# in Unity
+Minecraft clone using voxel generation made with C# in Unity
